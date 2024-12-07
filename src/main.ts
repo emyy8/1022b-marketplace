@@ -1,66 +1,58 @@
-// LIVE SERVER é do FRONT-END
-// QUEM É O LIVE SERVER DO BACK-END?
+import express from 'express';
+import cors from 'cors';
+import mysql from 'mysql2/promise';
 
-// 1 - Para construir um servidor back-end e responder
-// Vamos utilizar o EXPRESS
-import express from 'express'
-import cors from 'cors'
-import mysql from 'mysql2/promise'
-//Criar um objeto do tipo express.
-const app = express()
-//incluir pra ele receber json
-app.use(express.json())  //Middleware
-//incluir o CORS -> QUANDO A GENTE TEM OUTRA PORTA FAZENDO REQUISIÇÃO PARA A PORTA DO SERVIDOR
-app.use(cors())
-//ROTAS
-app.get("/produtos",async(req,res)=>{
+// Criando o aplicativo Express
+const server = express();
 
-    //O que eu tenho que fazer aqui dentro?
-    //OK -> PASSO 1: Criar o banco de dados
-    //PASSO 2: Usar a lib mysql2 para conectar com o banco
-    try{
-        const conexao = await mysql.createConnection({
-            host: process.env.dbhost?process.env.dbhost:"localhost",
-            user:process.env.dbuser?process.env.dbuser:"root",
-            password:process.env.dbpassword?process.env.dbpassword:"",
-            database:process.env.dbname?process.env.dbname:"banco1022b",
-            port:process.env.dbport?parseInt(process.env.dbport):3306
-        })
-        //PASSO 3: QUERY  -> SELECT * FROM produtos
-        const [result,fields]  = await conexao.query("SELECT * FROM produtos")
-        await conexao.end()
-        //PASSO 4: Colocar os dados do banco no response
-        res.send(result)
-    }catch(e){
-        res.status(500).send("Erro do servidor")
-    }  
-})
+// Configurando o middleware para receber JSON e permitir CORS
+server.use(express.json());
+server.use(cors());
 
-app.post("/produtos",async(req,res)=>{
-    try{
-        const conexao = await mysql.createConnection({
-            host: process.env.dbhost?process.env.dbhost:"localhost",
-            user:process.env.dbuser?process.env.dbuser:"root",
-            password:process.env.dbpassword?process.env.dbpassword:"",
-            database:process.env.dbname?process.env.dbname:"banco1022b",
-            port:process.env.dbport?parseInt(process.env.dbport):3306
-        })
-        const {id,nome,descricao,preco,imagem} = req.body
-        const [result,fields]  = 
-            await conexao.query("INSERT INTO produtos VALUES (?,?,?,?,?)",
-                [id,nome,descricao,preco,imagem])
-        await conexao.end()
-        res.status(200).send(result)
-    }catch(e){
-        console.log(e)
-        res.status(500).send("Erro do servidor")
-    }  
-})
+// Conexão com o banco de dados (pode ser configurado em um arquivo de variáveis de ambiente)
+const getDbConnection = async () => {
+  try {
+    return await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'banco1022b',
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+    });
+  } catch (error) {
+    console.error('Erro ao conectar no banco de dados:', error);
+    throw new Error('Falha na conexão com o banco de dados');
+  }
+};
 
+// Rota para listar os produtos
+server.get('/products', async (req, res) => {
+  try {
+    const connection = await getDbConnection();
+    const [products] = await connection.query('SELECT * FROM produtos');
+    await connection.end();
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+});
 
+// Rota para cadastrar um novo produto
+server.post('/products', async (req, res) => {
+  const { name, description, price, image } = req.body;
+  try {
+    const connection = await getDbConnection();
+    const query = 'INSERT INTO produtos (nome, descricao, preco, imagem) VALUES (?, ?, ?, ?)';
+    const [result] = await connection.query(query, [name, description, price, image]);
+    await connection.end();
+    res.status(201).json({ message: 'Produto cadastrado com sucesso', result });
+  } catch (error) {
+    console.error('Erro ao cadastrar produto:', error);
+    res.status(500).json({ message: 'Erro ao cadastrar produto' });
+  }
+});
 
-
-//INICIAR O SERVIDOR
-app.listen(8000,()=>{
-    console.log("SERVIDOR INICIADO NA PORTA 8000")
-})
+// Iniciar o servidor
+server.listen(8000, () => {
+  console.log('Servidor rodando na porta 8000');
+});
