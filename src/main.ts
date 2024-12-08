@@ -26,7 +26,7 @@ const getDbConnection = async () => {
 };
 
 // Rota para listar os produtos
-server.get('/products', async (req, res) => {
+server.get('/produtos', async (req, res) => {
   try {
     const connection = await getDbConnection();
     const [products] = await connection.query('SELECT * FROM produtos');
@@ -38,7 +38,7 @@ server.get('/products', async (req, res) => {
 });
 
 // Rota para cadastrar um novo produto
-server.post('/products', async (req, res) => {
+server.post('/produtos', async (req, res) => {
   const { name, description, price, image } = req.body;
   try {
     const connection = await getDbConnection();
