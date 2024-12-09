@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "test": "vitest -w",
-    "build":"npm install && tsc",
-    "start":"node ./dist/main.js"
+    "build": "npm install && tsc",
+    "start": "node ./dist/main.js"
   },
   "author": "guilhermeterenciani",
   "license": "ISC",
@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.21.0",
-    "mysql2": "^3.11.3"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.11.5"
   }
 }
