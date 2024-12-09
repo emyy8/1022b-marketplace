@@ -2,57 +2,60 @@ import express from 'express';
 import cors from 'cors';
 import mysql from 'mysql2/promise';
 
-// Criando o aplicativo Express
-const server = express();
+const app = express();
 
-// Configurando o middleware para receber JSON e permitir CORS
-server.use(express.json());
-server.use(cors());
+app.use(express.json());
+app.use(cors());
 
-// Conexão com o banco de dados (pode ser configurado em um arquivo de variáveis de ambiente)
-const getDbConnection = async () => {
-  try {
-    return await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'banco1022b',
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
-    });
-  } catch (error) {
-    console.error('Erro ao conectar no banco de dados:', error);
-    throw new Error('Falha na conexão com o banco de dados');
-  }
-};
+// ROTA PARA CADASTRAR UM LIVRO
+app.post('/livros', async (req, res) => {
+    try {
+        const { id, titulo, autor, editora, sinopse, preco, imagem } = req.body;
 
-// Rota para listar os produtos
-server.get('/produtos', async (req, res) => {
-  try {
-    const connection = await getDbConnection();
-    const [products] = await connection.query('SELECT * FROM produtos');
-    await connection.end();
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ message: 'Erro interno do servidor' });
-  }
+        const conexao = await mysql.createConnection({
+            host: process.env.DB_HOST || "localhost",
+            user: process.env.DB_USER || "root",
+            password: process.env.DB_PASSWORD || "",
+            database: process.env.DB_NAME || "defaultdb",
+            port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306
+        });
+
+        const query = `
+            INSERT INTO livros (id, titulo, autor, editora, sinopse, preco, imagem) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        const [resultado] = await conexao.execute(query, [id, titulo, autor, editora, sinopse, preco, imagem]);
+        await conexao.end();
+
+        res.status(201).send({ mensagem: 'Livro cadastrado com sucesso!' });
+    } catch (erro) {
+        console.error(erro);
+        res.status(500).send('Erro do servidor');
+    }
 });
 
-// Rota para cadastrar um novo produto
-server.post('/produtos', async (req, res) => {
-  const { name, description, price, image } = req.body;
-  try {
-    const connection = await getDbConnection();
-    const query = 'INSERT INTO produtos (nome, descricao, preco, imagem) VALUES (?, ?, ?, ?)';
-    const [result] = await connection.query(query, [name, description, price, image]);
-    await connection.end();
-    res.status(201).json({ message: 'Produto cadastrado com sucesso', result });
-  } catch (error) {
-    console.error('Erro ao cadastrar produto:', error);
-    res.status(500).json({ message: 'Erro ao cadastrar produto' });
-  }
+// ROTA PARA LISTAR TODOS OS LIVROS
+app.get('/livros', async (req, res) => {
+    try {
+        const conexao = await mysql.createConnection({
+            host: process.env.DB_HOST || "localhost",
+            user: process.env.DB_USER || "root",
+            password: process.env.DB_PASSWORD || "",
+            database: process.env.DB_NAME || "defaultdb",
+            port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306
+        });
+
+        const [resultado] = await conexao.query('SELECT * FROM livros');
+        await conexao.end();
+        res.send(resultado);
+    } catch (erro) {
+        console.error(erro);
+        res.status(500).send('Erro do servidor');
+    }
 });
 
-// Iniciar o servidor
-server.listen(8000, () => {
-  console.log('Servidor rodando na porta 8000');
+// INICIAR O SERVIDOR
+const PORTA = process.env.PORTA || 8000;
+app.listen(PORTA, () => {
+    console.log(`Servidor iniciado na porta ${PORTA}`);
 });
